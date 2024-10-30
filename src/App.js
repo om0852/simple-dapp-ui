@@ -1,11 +1,26 @@
 import logo from "./logo.svg";
 import "./App.css";
 import React, { useEffect } from "react";
+import web3 from "web3";
 function App() {
   useEffect(() => {
     const loadProvicer = async () => {
       console.log(window.web3);
       console.log(window?.ethereum);
+
+      let provider = null;
+      if (window.ethereum) {
+        provider = window.ethereum;
+        try {
+          await provider.enable();
+        } catch (error) {
+          console.log("User is not allowed");
+        }
+      } else if (window.web3) {
+        provider = window.web3.currentProvider;
+      } else if (!process.env.production) {
+        provider = new web3.providers.HttpProvider("http://localhost:7545");
+      }
 
       // console.log(window>.ethereum.target);
     };
