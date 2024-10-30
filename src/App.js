@@ -1,8 +1,13 @@
 import logo from "./logo.svg";
 import "./App.css";
-import React, { useEffect } from "react";
-import web3 from "web3";
+import React, { useEffect, useState } from "react";
+import Web3 from "web3";
 function App() {
+  const [account, setAccount] = useState(null);
+  const [web3Api, setWeb3Api] = useState({
+    provider: null,
+    web3: null,
+  });
   useEffect(() => {
     const loadProvicer = async () => {
       console.log(window.web3);
@@ -19,9 +24,10 @@ function App() {
       } else if (window.web3) {
         provider = window.web3.currentProvider;
       } else if (!process.env.production) {
-        provider = new web3.providers.HttpProvider("http://localhost:7545");
+        provider = new Web3.providers.HttpProvider("http://localhost:7545");
       }
 
+      setWeb3Api({ provider: provider, web3: new Web3(provider) });
       // console.log(window>.ethereum.target);
     };
 
@@ -30,6 +36,16 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const getAccount = async () => {
+      const accounts = await web3Api.web3.eth.getAccounts();
+      // console.log(accounts)
+      setAccount(accounts[0]);
+    };
+
+    web3Api.web3 && getAccount();
+  }, [web3Api.web3]);
+  // console.log(web3Api);
   return (
     <div className="App">
       <div className="card">
@@ -39,7 +55,7 @@ function App() {
         <div className="card-body">Balance:20ETH</div>
       </div>{" "}
       <div className="card">
-        <div className="card-body">Account:0000x0000</div>
+        <div className="card-body">Account:{account ? account :"Metamask not connected"}</div>
       </div>{" "}
       <button
         type="button"
