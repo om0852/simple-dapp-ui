@@ -2,6 +2,7 @@ import logo from "./logo.svg";
 import "./App.css";
 import React, { useEffect, useState } from "react";
 import Web3 from "web3";
+import detechEthereumProvider from "@metamask/detect-provider";
 function App() {
   const [account, setAccount] = useState(null);
   const [web3Api, setWeb3Api] = useState({
@@ -13,22 +14,28 @@ function App() {
       console.log(window.web3);
       console.log(window?.ethereum);
 
-      let provider = null;
-      if (window.ethereum) {
-        provider = window.ethereum;
-        try {
-          await provider.enable();
-        } catch (error) {
-          console.log("User is not allowed");
-        }
-      } else if (window.web3) {
-        provider = window.web3.currentProvider;
-      } else if (!process.env.production) {
-        provider = new Web3.providers.HttpProvider("http://localhost:7545");
+      let provider = await detechEthereumProvider();
+      if (provider) {
+        provider?.request({ method: "eth_requestAccounts" });
+        setWeb3Api({ provider: provider, web3: new Web3(provider) });
+      } else {
+        alert("Install metasmask");
       }
+      // if (window.ethereum) {
+      //   provider = window.ethereum;
+      //   try {
+      //     await provider.enable();
+      //   } catch (error) {
+      //     console.log("User is not allowed");
+      //   }
+      // } else if (window.web3) {
+      //   provider = window.web3.currentProvider;
+      // } else if (!process.env.production) {
+      //   provider = new Web3.providers.HttpProvider("http://localhost:7545");
+      // }
 
-      setWeb3Api({ provider: provider, web3: new Web3(provider) });
-      // console.log(window>.ethereum.target);
+      // setWeb3Api({ provider: provider, web3: new Web3(provider) });
+      // // console.log(window>.ethereum.target);
     };
 
     return () => {
@@ -55,7 +62,9 @@ function App() {
         <div className="card-body">Balance:20ETH</div>
       </div>{" "}
       <div className="card">
-        <div className="card-body">Account:{account ? account :"Metamask not connected"}</div>
+        <div className="card-body">
+          Account:{account ? account : "Metamask not connected"}
+        </div>
       </div>{" "}
       <button
         type="button"
