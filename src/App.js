@@ -1,87 +1,129 @@
-import logo from "./logo.svg";
-import "./App.css";
 import React, { useEffect, useState } from "react";
 import Web3 from "web3";
-import detechEthereumProvider from "@metamask/detect-provider";
+import contractABI from "../src/contract_app/Funder.json";
+import detectEthereumProvider from "@metamask/detect-provider";
+import "./App.css";
+
 function App() {
   const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState(null);
   const [web3Api, setWeb3Api] = useState({
     provider: null,
     web3: null,
+    contract: null,
   });
-  useEffect(() => {
-    const loadProvicer = async () => {
-      console.log(window.web3);
-      console.log(window?.ethereum);
-
-      let provider = await detechEthereumProvider();
+  const loadProvider = async () => {
+    try {
+      
+      const provider = await detectEthereumProvider();
       if (provider) {
-        provider?.request({ method: "eth_requestAccounts" });
-        setWeb3Api({ provider: provider, web3: new Web3(provider) });
-      } else {
-        alert("Install metasmask");
-      }
-      // if (window.ethereum) {
-      //   provider = window.ethereum;
-      //   try {
-      //     await provider.enable();
-      //   } catch (error) {
-      //     console.log("User is not allowed");
-      //   }
-      // } else if (window.web3) {
-      //   provider = window.web3.currentProvider;
-      // } else if (!process.env.production) {
-      //   provider = new Web3.providers.HttpProvider("http://localhost:7545");
-      // }
-
-      // setWeb3Api({ provider: provider, web3: new Web3(provider) });
-      // // console.log(window>.ethereum.target);
-    };
-
-    return () => {
-      loadProvicer();
-    };
+        const web3 = new Web3(provider);
+      console.log(web3);
+      const contract = new web3.eth.Contract(
+        contractABI,
+        "0x921CD0f089F7Ddf3bf6d2E0B5bf5bf7fB2a04e9e"
+      );
+      setWeb3Api({
+        provider,
+        web3,
+        contract,
+      });
+      
+      // Request account access if needed
+      await provider.request({ method: "eth_requestAccounts" });
+    } else {
+      alert("Please install MetaMask!");
+    }
+  } catch (error) {
+    
+  }
+  };
+  useEffect(() => {
+    
+    loadProvider();
   }, []);
+
+  useEffect(() => {
+    const loadBalance = async () => {
+      const { web3, contract } = web3Api;
+      if (contract) {
+        const balance = await web3.eth.getBalance(contract.options.address);
+        setBalance(web3.utils.fromWei(balance, "ether"));
+      }
+    };
+    if (web3Api.web3) loadBalance();
+  }, [web3Api]);
 
   useEffect(() => {
     const getAccount = async () => {
       const accounts = await web3Api.web3.eth.getAccounts();
-      // console.log(accounts)
       setAccount(accounts[0]);
     };
-
-    web3Api.web3 && getAccount();
+    if (web3Api.web3) getAccount();
   }, [web3Api.web3]);
-  // console.log(web3Api);
+
+  const handleTransfer = async () => {
+    try{
+
+      if (web3Api.contract) {
+        await web3Api.contract.methods
+        .transfer()
+        .send({
+          from: account,
+          value: web3Api.web3.utils.toWei("1", "ether"),
+        });
+      }
+    }
+    catch(error){
+
+    }
+  };
+
+  const handleWithdraw = async () => {
+    try {
+      
+      if (web3Api.contract) {
+        await web3Api.contract.methods
+        .withdraw(web3Api.web3.utils.toWei("0.5", "ether"))
+        .send({ from: account });
+      }
+    } catch (error) {
+      
+    }
+  };
+
   return (
     <div className="App">
       <div className="card">
         <div className="card-body">Funding</div>
-      </div>{" "}
-      <div className="card">
-        <div className="card-body">Balance:20ETH</div>
-      </div>{" "}
+      </div>
       <div className="card">
         <div className="card-body">
-          Account:{account ? account : "Metamask not connected"}
+          Balance: {balance ? balance : "Loading..."} ETH
         </div>
-      </div>{" "}
+      </div>
+      <div className="card">
+        <div className="card-body">
+          Account: {account ? account : "MetaMask not connected"}
+        </div>
+      </div>
+      {!account && (
+        <button type="button" className="btn btn-success" onClick={loadProvider}>
+          Connect to MetaMask
+        </button>
+)}
       <button
         type="button"
-        onClick={async () => {
-          const accounts = await window?.ethereum.request({
-            method: "eth_requestAccounts",
-          });
-          console.log(accounts[0]);
-        }}
         className="btn btn-success"
+        onClick={handleTransfer}
       >
-        Connect to metamask
-      </button>
-      <button type="button" className="btn btn-success">
         Transfer
       </button>
-      <button type="button" className="btn btn-primary">
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={handleWithdraw}
+      >
         Withdraw
       </button>
     </div>
